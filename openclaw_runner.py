@@ -7,8 +7,27 @@ Simplified entry point for OpenClaw cron job execution
 import os
 import sys
 import logging
+import subprocess
 from pathlib import Path
-from dotenv import load_dotenv
+
+# Activate virtual environment if it exists
+def activate_venv():
+    script_dir = Path(__file__).parent
+    venv_python = script_dir / "venv" / "bin" / "python"
+    
+    if venv_python.exists():
+        # Re-run this script with the virtual environment's Python
+        if sys.executable != str(venv_python):
+            os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+
+# Ensure virtual environment is activated
+activate_venv()
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    print("❌ Error: dotenv module not found. Please run setup_openclaw.sh first")
+    sys.exit(1)
 
 # Set up logging for OpenClaw environment
 def setup_logging():
