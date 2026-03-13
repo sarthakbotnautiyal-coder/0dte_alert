@@ -1,4 +1,6 @@
 import time
+import logging
+from logging.handlers import RotatingFileHandler
 import yaml
 import pandas as pd
 
@@ -12,7 +14,13 @@ from zoneinfo import ZoneInfo
 import numpy as np
 
 
-# ✅ Load environment variables from .env file
+logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    handler = RotatingFileHandler('logs/0dte_alert.log', maxBytes=2000000, backupCount=3, encoding='utf-8')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
 load_dotenv()
 ALERT_COOLDOWN_MINUTES = 30          # minimum time between alerts
 PRICE_TOLERANCE_POINTS = 18          # skip if SPX moved less than this from last alert
@@ -85,7 +93,7 @@ def should_consider_trade(features: dict) -> bool:
         return True
 
     alert(features["current_time"] + "--" + message,silent=True)
-    print(message)
+    logger.info(message)
     return False
 
 def main():
@@ -99,7 +107,7 @@ def main():
     last_alert_time = state["last_alert_time"]
     last_alert_price = state["last_alert_price"]
 
-    print(f"Loaded last alert: time={last_alert_time}, price={last_alert_price}")
+    logger.info(f"Loaded last alert: time={last_alert_time}, price={last_alert_price}")
     
     # get data for last working day from date_in as string
     if not date_in or date_in.strip() == "":
@@ -114,7 +122,7 @@ def main():
     last_working_day = last_working_day.strftime("%Y-%m-%d")
     history = fetch_market_data(config["api"],config[run_type]['interval_min'],date_in=last_working_day)
 
-    print("📡 SPX 0-DTE Monitor Started...\n")
+    logger.info("📡 SPX 0-DTE Monitor Started...\n")
 
     
     while True:
@@ -194,7 +202,7 @@ def main():
                     last_alert_price = None
                     del_last_alert_state()
 
-            print(latest.name.strftime(("%Y-%m-%d %H:%M:%S")) )
+            logger.info(latest.name.strftime(('%Y-%m-%d %H:%M:%S')))
             if should_consider_trade(features):   
                 #print(latest)  
                 decision = evaluate_with_agent(features)
@@ -209,15 +217,15 @@ def main():
                     save_last_alert_state(last_alert_time, last_alert_price)
 
                 else:
-                    print("🤖 Agent says: no clean setup.")     
+                    logger.info("🤖 Agent says: no clean setup.")     
 
 
         except Exception as e:
-            print("❌ Error:", e)
+            logger.error("❌ Error:", e)
 
-        print("slleping for", config[run_type]["fetch_interval_sec"], "seconds...\n")
+        logger.info("slleping for", config[run_type]["fetch_interval_sec"], "seconds...\n")
         time.sleep(config[run_type]["fetch_interval_sec"])
-        print("-" * 50)
+        logger.info("-" * 50)
 
         # exit the loop if we latest.name.strftime('%Y-%m-%d %H:%M:%S') is equal to  current_day_end
         # if latest.name >= current_day_end.tz_localize(latest.name.tzinfo):
