@@ -110,13 +110,14 @@ def main():
     logger.info(f"Loaded last alert: time={last_alert_time}, price={last_alert_price}")
     
     # get data for last working day from date_in as string
+    MARKET_TZ = ZoneInfo("America/New_York")
     if not date_in or date_in.strip() == "":
-        last_working_day = pd.Timestamp.now(tz="America/New_York") - pd.offsets.BDay(3)
-        current_day_end = pd.Timestamp.now(tz="America/New_York").replace(hour=16, minute=0, second=0, microsecond=0)
+        last_working_day = pd.Timestamp.now(tz=MARKET_TZ) - pd.offsets.BDay(3)
+        current_day_end = pd.Timestamp.now(tz=MARKET_TZ).replace(hour=16, minute=0, second=0, microsecond=0)
         run_type = "live"
     else:
         last_working_day = pd.to_datetime(date_in) - pd.offsets.BDay(1)
-        current_day_end = pd.to_datetime(date_in).replace(hour=16, minute=0, second=0, microsecond=0)
+        current_day_end = pd.Timestamp(date_in, tz=MARKET_TZ).replace(hour=16, minute=0, second=0, microsecond=0)
         run_type = "backtest"
     
     last_working_day = last_working_day.strftime("%Y-%m-%d")
@@ -136,7 +137,10 @@ def main():
 
             latest = history.iloc[-1]
 
-            # check if current_time is equal to the time_in or todays date if time_in is None
+            # ─── Exit if market closed ───
+            if latest.name >= current_day_end:
+                logger.info(f"🏁 Market closed ({current_day_end.strftime('%Y-%m-%d %H:%M')} ET) — exiting.")
+                break
             
 
 
@@ -226,13 +230,6 @@ def main():
         logger.info("slleping for", config[run_type]["fetch_interval_sec"], "seconds...\n")
         time.sleep(config[run_type]["fetch_interval_sec"])
         logger.info("-" * 50)
-
-        # exit the loop if we latest.name.strftime('%Y-%m-%d %H:%M:%S') is equal to  current_day_end
-        # if latest.name >= current_day_end.tz_localize(latest.name.tzinfo):
-        #     print(f"Reached end of day ({current_day_end}), exiting.")
-        #     break
-
-        
 
 if __name__ == "__main__":
     main()
