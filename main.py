@@ -15,11 +15,11 @@ import numpy as np
 
 
 logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    handler = RotatingFileHandler('logs/0dte_alert.log', maxBytes=2000000, backupCount=3, encoding='utf-8')
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+handler = RotatingFileHandler('logs/0dte_alert.log', maxBytes=2000000, backupCount=3, encoding='utf-8')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 load_dotenv()
 ALERT_COOLDOWN_MINUTES = 30          # minimum time between alerts
@@ -210,10 +210,10 @@ def main():
             if should_consider_trade(features):   
                 #print(latest)  
                 decision = evaluate_with_agent(features)
-                log_decision(decision.model_dump(), features)
+                log_decision(decision.dict(), features)
 
                 if decision.trade and decision.confidence >= 0.7:
-                    send_alert(decision.model_dump(), latest)
+                    send_alert(decision.dict(), latest)
                     
                     # Update persistent state
                     last_alert_time = now
@@ -225,9 +225,9 @@ def main():
 
 
         except Exception as e:
-            logger.error("❌ Error:", e)
+            logger.error(f"❌ Error: {e}")
 
-        logger.info("slleping for", config[run_type]["fetch_interval_sec"], "seconds...\n")
+        logger.info(f"Sleeping for {config[run_type]['fetch_interval_sec']} seconds...\n")
         time.sleep(config[run_type]["fetch_interval_sec"])
         logger.info("-" * 50)
 
