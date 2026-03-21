@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 from logging.handlers import RotatingFileHandler
@@ -97,6 +98,8 @@ def should_consider_trade(features: dict) -> bool:
     return False
 
 def main():
+    MARKET_TZ = ZoneInfo("America/New_York")
+    logger.info("🚀 0DTE Bot started at %s (PID: %s)", datetime.now(MARKET_TZ), os.getpid())
 
     ##"2026-02-12" -- big down day
     date_in = None #"2026-02-26" #"2026-02-23" #"2026-02-23" #"2026-01-29" #"2026-01-30" # live
